@@ -12,18 +12,6 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class AppConfig {
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
-
-        // Key serializer (String)
-        template.setKeySerializer(new StringRedisSerializer());
-
-        template.afterPropertiesSet();
-        return template;
-    }
-
-    @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
             .setConnectTimeout(Duration.ofSeconds(5))
