@@ -11,13 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +32,9 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Value("${sms.servers}")
     private String servers;
+
+    @Value("${sms.file.owner}")
+    private String fileOwner;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -102,7 +107,22 @@ public class ResourceServiceImpl implements ResourceService {
         if (!directory.exists()) {
             directory.mkdirs();
         }
-        
+
+        // write file
         Files.write(filePath, byteArray);
+
+        // set permission
+        Files.setPosixFilePermissions(filePath, PosixFilePermissions.fromString("rw-r--r--"));
+
+        // set owner/group
+        UserPrincipalLookupService lookupService = filePath.getFileSystem().getUserPrincipalLookupService();
+        UserPrincipal owner = lookupService.lookupPrincipalByName(fileOwner);
+        Files.setOwner(filePath, owner);
+
+        GroupPrincipal group = filePath.getFileSystem()
+            .getUserPrincipalLookupService()
+            .lookupPrincipalByGroupName(fileOwner);
+
+        Files.setAttribute(filePath, "posix:group", group);
     }
 }
