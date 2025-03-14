@@ -9,5 +9,4 @@ public class SmsResourceHandlerApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SmsResourceHandlerApplication.class, args);
 	}
-
 }
