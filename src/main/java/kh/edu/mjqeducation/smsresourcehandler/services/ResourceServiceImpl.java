@@ -20,7 +20,9 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -103,9 +105,33 @@ public class ResourceServiceImpl implements ResourceService {
         Path fileDir = filePath.getParent();
 
         File directory = new File(fileDir.toString());
+
+        // set owner/group
+        UserPrincipalLookupService lookupService = filePath.getFileSystem().getUserPrincipalLookupService();
+        UserPrincipal owner = lookupService.lookupPrincipalByName(fileOwner);
+        GroupPrincipal group = filePath.getFileSystem()
+            .getUserPrincipalLookupService()
+            .lookupPrincipalByGroupName(fileOwner);
         
         if (!directory.exists()) {
+            List<Path> notYetCreatedDir = new ArrayList<>();
+            File parent = directory;
+
+            // walk backward to check new missing dir
+            while (parent != null) {
+                if (parent.exists()) break;
+                notYetCreatedDir.add(parent.toPath());
+                parent = parent.getParentFile();
+            }
+
             directory.mkdirs();
+
+            LOGGER.debug("Missing dir  {}", notYetCreatedDir.reversed());
+
+            for (Path missingDir : notYetCreatedDir) {
+                Files.setOwner(missingDir, owner);
+                Files.setAttribute(missingDir, "posix:group", group);
+            }
         }
 
         // write file
@@ -114,15 +140,7 @@ public class ResourceServiceImpl implements ResourceService {
         // set permission
         Files.setPosixFilePermissions(filePath, PosixFilePermissions.fromString("rw-r--r--"));
 
-        // set owner/group
-        UserPrincipalLookupService lookupService = filePath.getFileSystem().getUserPrincipalLookupService();
-        UserPrincipal owner = lookupService.lookupPrincipalByName(fileOwner);
         Files.setOwner(filePath, owner);
-
-        GroupPrincipal group = filePath.getFileSystem()
-            .getUserPrincipalLookupService()
-            .lookupPrincipalByGroupName(fileOwner);
-
         Files.setAttribute(filePath, "posix:group", group);
     }
 }
