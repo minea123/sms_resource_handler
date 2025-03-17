@@ -68,7 +68,7 @@ public class ResourceController {
                 .body(requestResource);
         }
 
-        LOGGER.warn("Resource not found, getting from other server: {}", realResourcePath);
+        LOGGER.debug("Resource not found, getting from other server: {}", realResourcePath);
 
         Resource downloadedResource = resourceService.getFileFromOtherServer(realResourcePath);
 
