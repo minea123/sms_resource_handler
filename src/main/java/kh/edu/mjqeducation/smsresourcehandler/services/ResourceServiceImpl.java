@@ -102,6 +102,12 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public void writeToDisk(byte[] byteArray, String destination) throws IOException {
         Path filePath = Paths.get(destination);
+
+        if (Files.exists(filePath)) {
+            LOGGER.debug("NOTICE: file already exists, ignore write {}", filePath);
+            return;
+        }
+
         Path fileDir = filePath.getParent();
 
         File directory = new File(fileDir.toString());
