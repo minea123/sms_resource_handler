@@ -61,7 +61,7 @@ public class ResourceController {
         Resource requestResource = resourceService.getFileSystemAsResource(realResourcePath);
 
         // resource exiss
-        if (requestResource != null) {
+        if (requestResource != null && requestResource.exists()) {
             // Return the file as a ResponseEntity
             return ResponseEntity.ok()
                 .contentType(mediaType)
