@@ -8,6 +8,7 @@ import java.io.InputStream;
 import kh.edu.mjqeducation.smsresourcehandler.dto.FileContext;
 import kh.edu.mjqeducation.smsresourcehandler.services.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,9 +42,7 @@ import org.apache.commons.io.input.TeeInputStream;
 @Controller
 public class ResourceController {
     private static final Logger LOGGER = LogManager.getLogger(ResourceController.class);
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    private static final Resource notFoundImage = new FileSystemResource("/App/aii_school_prod/public/assets/images/no-images/no-image.png");
 
     @Autowired
     private ResourceService resourceService;
@@ -75,7 +74,10 @@ public class ResourceController {
         // resource not found on other server
         if (downloadedResource == null) {
             LOGGER.warn("Can't find resource on another servers, something is wrong :)");
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                .ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(notFoundImage);
         }
 
         // save to local
