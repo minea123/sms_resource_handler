@@ -74,7 +74,7 @@ public class ResourceServiceImpl implements ResourceService {
             HttpEntity<Map<String, String>> request = new HttpEntity<>(requestMap, headers);
             String endpoint = "http://" + server + "/api/download";
 
-             Resource resource = restTemplate.postForObject(endpoint , request, Resource.class);
+            Resource resource = restTemplate.postForObject(endpoint , request, Resource.class);
 
              if (resource != null) {
                 LOGGER.debug("Found resource in {}", server);
@@ -141,11 +141,13 @@ public class ResourceServiceImpl implements ResourceService {
         }
 
         // write file
+        LOGGER.debug("Writing file to {}", filePath);
         Files.write(filePath, byteArray);
 
         // set permission
         Files.setPosixFilePermissions(filePath, PosixFilePermissions.fromString("rw-r--r--"));
 
+        LOGGER.debug("Setting file owner permission to {}", fileOwner);
         Files.setOwner(filePath, owner);
         Files.setAttribute(filePath, "posix:group", group);
     }
