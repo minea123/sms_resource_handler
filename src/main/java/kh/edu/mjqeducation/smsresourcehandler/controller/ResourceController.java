@@ -1,43 +1,25 @@
 package kh.edu.mjqeducation.smsresourcehandler.controller;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-
 import kh.edu.mjqeducation.smsresourcehandler.dto.FileContext;
 import kh.edu.mjqeducation.smsresourcehandler.services.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.apache.catalina.connector.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
-import java.nio.file.FileStore;
-import org.apache.commons.io.input.TeeInputStream;
 
 @Controller
 public class ResourceController {
@@ -59,8 +41,9 @@ public class ResourceController {
 
         Resource requestResource = resourceService.getFileSystemAsResource(realResourcePath);
 
-        // resource exiss
+        // resource exists
         if (requestResource != null && requestResource.exists()) {
+            LOGGER.debug("Resource found locally {}", realResourcePath);
             // Return the file as a ResponseEntity
             return ResponseEntity.ok()
                 .contentType(mediaType)
@@ -81,7 +64,7 @@ public class ResourceController {
         }
 
         // save to local
-        resourceService.writeToDisk(downloadedResource.getContentAsByteArray(), realResourcePath);
+        resourceService.writeToDisk(downloadedResource, realResourcePath);
 
         return ResponseEntity.ok()
             .contentType(mediaType)
@@ -98,7 +81,20 @@ public class ResourceController {
 
     @PostMapping(value = "/api/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> upload(@RequestPart("file") MultipartFile file, @RequestPart("destination") String destination) throws IOException { 
-        resourceService.writeToDisk(file.getBytes(), destination);
+        // Convert file multipart to Resource
+        Resource resource = new ByteArrayResource(file.getBytes()) {
+            @Override
+            public String getFilename() {
+                return file.getOriginalFilename();
+            }
+
+            @Override
+            public long contentLength() {
+                return file.getSize();
+            }
+        };
+
+        resourceService.writeToDisk(resource, destination);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

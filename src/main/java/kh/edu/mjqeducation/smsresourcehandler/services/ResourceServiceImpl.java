@@ -13,9 +13,11 @@ import org.springframework.core.io.Resource;
 import org.springframework.web.client.RestTemplate;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
@@ -100,7 +102,7 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
-    public void writeToDisk(byte[] byteArray, String destination) throws IOException {
+    public void writeToDisk(Resource file, String destination) throws IOException {
         Path filePath = Paths.get(destination);
 
         if (Files.exists(filePath)) {
@@ -141,13 +143,16 @@ public class ResourceServiceImpl implements ResourceService {
         }
 
         // write file
-        LOGGER.debug("Writing file to {}", filePath);
-        Files.write(filePath, byteArray);
+        LOGGER.debug("Writing file {} bytes to {}", file.contentLength(), filePath);
+        
+        try (InputStream in = file.getInputStream()) {
+            Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);
+        }
 
         // set permission
         Files.setPosixFilePermissions(filePath, PosixFilePermissions.fromString("rw-r--r--"));
 
-        LOGGER.debug("Setting file owner permission to {}", fileOwner);
+        LOGGER.debug("Setting file owner to {}", fileOwner);
         Files.setOwner(filePath, owner);
         Files.setAttribute(filePath, "posix:group", group);
     }
